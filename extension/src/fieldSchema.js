@@ -33,6 +33,7 @@ const FIELD_SCHEMA = [
   { key: 'monthly_line_rental', description: 'Monthly line rental charge.', aliases: ['monthly_rental', 'line_rental'] },
   { key: 'contract_term', description: 'Contract length, e.g. "24 Months".', aliases: ['minimum_term', 'contract_length'] },
   { key: 'todays_date', description: "Today's date (UK format) at the moment the document is generated.", aliases: ['date', 'today_date'] },
+  { key: 'formatted_date', description: 'Today\'s date, long form with ordinal day, e.g. "17th July 2026".', aliases: ['long_date', 'date_formatted', 'date_long'] },
   { key: 'now_datetime', description: 'Current date + time (UK format) at the moment the document is generated.', aliases: ['now', 'generated', 'generated_date', 'timestamp'] },
 ];
 

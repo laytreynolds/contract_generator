@@ -231,6 +231,29 @@ function nowUk() {
   return `${todayUk()} ${time}`;
 }
 
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+// 1 -> "st", 2 -> "nd", 3 -> "rd", 4 -> "th", 11-13 -> "th", 21 -> "st", ...
+function ordinalSuffix(day) {
+  if (day % 100 >= 11 && day % 100 <= 13) return 'th';
+  switch (day % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+}
+
+// -> "17th July 2026"
+function formattedDateLong() {
+  const d = new Date();
+  const day = d.getDate();
+  return `${day}${ordinalSuffix(day)} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 // One-line "123 Main St, Second Line, Town, County, POSTCODE" style address for templates
 // (e.g. a Key Contract Information sheet) that want a single address field rather than
 // separate line-by-line ones.
@@ -302,6 +325,7 @@ function extractKnownFields(rawExtraction) {
     contract_term: extraInfo.contractTerm || '',
     todays_date: todayUk(),
     now_datetime: nowUk(),
+    formatted_date: formattedDateLong(),
   };
 
   return { knownFields, extraInfo, warnings };

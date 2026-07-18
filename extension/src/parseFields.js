@@ -174,6 +174,16 @@ function resolveBusinessName(labelValues, specialReqName, warnings) {
   return name;
 }
 
+// Separate from resolveBusinessName's combined "First Last" -- some templates (e.g. a welcome
+// letter salutation) want just the first name. Prefers the literal First Name label when present;
+// otherwise falls back to the first word of whatever name was already resolved above (which
+// covers the Business Name / Full Name / Special Requirements fallback paths too).
+function resolveFirstName(labelValues, businessName) {
+  const firstName = labelValues['First Name'] || '';
+  if (!isBlank(firstName)) return firstName.trim();
+  return businessName ? businessName.trim().split(/\s+/)[0] : '';
+}
+
 function resolvePlanAndPrice(labelValues, planSegmentRaw, warnings) {
   // "New Tariff" on the old read-only page, just "Tariff" on the newer sales-confirmation form.
   const tariffField = labelValues['New Tariff'] || labelValues['Tariff'] || '';
@@ -285,6 +295,7 @@ function extractKnownFields(rawExtraction) {
   const { extraInfo, nameFromSpecialReq } = parseSpecialRequirements(rawExtraction.specialRequirements);
 
   const businessName = resolveBusinessName(labelValues, nameFromSpecialReq, warnings);
+  const firstName = resolveFirstName(labelValues, businessName);
   const { plan, price } = resolvePlanAndPrice(labelValues, extraInfo.planSegment, warnings);
   const address = resolveAddress(
     rawExtraction.billingAddress,
@@ -295,6 +306,7 @@ function extractKnownFields(rawExtraction) {
 
   const knownFields = {
     business_name: businessName,
+    first_name: firstName,
     address_first_line: address.first,
     address_second_line: address.second,
     address_third_line: address.third,
@@ -319,7 +331,7 @@ function extractKnownFields(rawExtraction) {
     // free-text Special Requirements, so it's preferred when present.
     date_of_birth: (!isBlank(labelValues['Date Of Birth']) && isoDateToUk(labelValues['Date Of Birth'])) || extraInfo.dob || '',
     agent_name: (!isBlank(labelValues['Agent Name']) && labelValues['Agent Name']) || '',
-    eligibility_date: (!isBlank(labelValues['Eligibility Date']) && labelValues['Eligibility Date']) || '',
+    eligibility_date: (!isBlank(labelValues['Eligibility Date']) && isoDateToUk(labelValues['Eligibility Date'])) || '',
     sale_type: (!isBlankField(labelValues['Sale Type']) && labelValues['Sale Type']) || '',
     monthly_line_rental: extraInfo.monthlyLineRental || '',
     contract_term: extraInfo.contractTerm || '',

@@ -1,0 +1,12 @@
+[
+  {
+    "id": "customer-contract",
+    "label": "Customer Contract",
+    "file": "customer-contract.docx"
+  },
+  {
+    "id": "contract-information",
+    "label": "Contract Information",
+    "file": "contract-information.docx"
+  }
+]

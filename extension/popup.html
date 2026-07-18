@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Document Generator</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    width: 380px;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-size: 13px;
+    margin: 0;
+    padding: 12px;
+    color: #1f2937;
+  }
+  h1 {
+    font-size: 15px;
+    margin: 0 0 10px;
+  }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    background: #2563eb;
+    color: #fff;
+    width: 100%;
+  }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+  button.secondary { background: #e5e7eb; color: #1f2937; margin-bottom: 8px; }
+  #status { min-height: 16px; margin: 6px 0 10px; font-size: 12px; color: #6b7280; }
+  #status.error { color: #b91c1c; }
+  .field { margin-bottom: 8px; }
+  .field label { display: block; font-weight: 600; margin-bottom: 2px; }
+  .field input, select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font: inherit;
+    background: #fff;
+  }
+  #templatePicker { margin-bottom: 10px; }
+  #templatePicker label { display: block; font-weight: 600; margin-bottom: 2px; }
+  #warnings {
+    display: none;
+    background: #fffbeb;
+    border: 1px solid #fbbf24;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 10px 0;
+    font-size: 12px;
+  }
+  #warnings.show { display: block; }
+  #warnings ul { margin: 4px 0 0; padding-left: 18px; }
+  details { margin: 10px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  #extraInfo { font-size: 12px; margin-top: 6px; }
+  #extraInfo .row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; border-bottom: 1px dashed #e5e7eb; }
+  #extraInfo .row span:first-child { color: #6b7280; }
+  #fieldReference .row { padding: 4px 0; border-bottom: 1px dashed #e5e7eb; }
+  #fieldReference .row code { font-weight: 600; }
+  #fieldReference .row .desc { color: #6b7280; display: block; }
+  #formSection { display: none; margin-top: 8px; }
+  #formSection.show { display: block; }
+  #noTokensNote { font-size: 12px; color: #6b7280; margin: 6px 0; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 10px 0; }
+</style>
+</head>
+<body>
+  <h1>Document Generator</h1>
+
+  <div id="templatePicker">
+    <label for="templateSelect">Template</label>
+    <select id="templateSelect"></select>
+  </div>
+
+  <button id="extractBtn">Extract from this page</button>
+  <div id="status"></div>
+
+  <div id="formSection">
+    <div id="fieldsContainer"></div>
+    <div id="noTokensNote" style="display:none">This template has no {{fields}} to fill in.</div>
+
+    <div id="warnings"><strong>Check these before generating:</strong><ul id="warningsList"></ul></div>
+
+    <details>
+      <summary>Extra reference info (not in the template)</summary>
+      <div id="extraInfo"></div>
+    </details>
+
+    <hr />
+    <button id="generateBtn">Generate Document (.docx)</button>
+  </div>
+
+  <details id="fieldReferenceDetails">
+    <summary>Field reference (for building new templates)</summary>
+    <div id="fieldReference" style="font-size:12px; margin-top:6px;"></div>
+  </details>
+
+  <script src="lib/jszip.min.js"></script>
+  <script src="src/extractPage.js"></script>
+  <script src="src/fieldSchema.js"></script>
+  <script src="src/parseFields.js"></script>
+  <script src="src/docxFill.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Chadwell CRM Contract Generator",
+  "version": "1.0.0",
+  "description": "Extracts customer details from a CRM order page and generates a filled Customer Contract .docx.",
+  "permissions": ["activeTab", "scripting", "downloads"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  }
+}

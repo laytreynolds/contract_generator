@@ -8,5 +8,10 @@
     "id": "contract-information",
     "label": "Contract Information",
     "file": "contract-information.docx"
+  },
+  {
+    "id": "welcome-letter",
+    "label": "Welcome Letter",
+    "file": "welcome-letter.docx"
   }
 ]

@@ -299,7 +299,10 @@ function currentTemplateMeta() {
 
 // An empty list is the normal first-run state (nothing imported yet), not an error -- disable the
 // picker and generate buttons and point the user at the options page instead of failing init().
-async function loadTemplates() {
+// Named distinctly from TemplateStore.loadTemplates() -- both are top-level function declarations
+// in classic <script> tags sharing one global scope, so an identical name here would silently
+// clobber TemplateStore's internal self-reference to its own loadTemplates() (see templateStore.js).
+async function refreshTemplateList() {
   const templates = await TemplateStore.loadTemplates();
   state.templates = templates;
   templateSelect.innerHTML = '';
@@ -505,7 +508,7 @@ async function init() {
   renderFieldReference();
   extractBtn.disabled = true;
   try {
-    await loadTemplates();
+    await refreshTemplateList();
   } catch (err) {
     console.error(err);
     setStatus(`Could not load templates: ${err.message}`, true);

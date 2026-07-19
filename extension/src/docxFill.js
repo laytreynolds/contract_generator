@@ -72,6 +72,11 @@ function replaceMergeFields(xml, fieldMap) {
 
   const tokenRegex = new RegExp(TOKEN_REGEX.source, 'g');
   const edits = new Map(); // nodeIndex -> new inner text
+  // Local offsets below are relative to each node's ORIGINAL rawInner. Once a node has been
+  // edited its text shifts, so we track the cumulative length change per node and adjust
+  // later offsets into that same node by it.
+  const deltas = new Map(); // nodeIndex -> cumulative length change from earlier edits
+  const deltaOf = (i) => deltas.get(i) || 0;
   const filledKeys = new Set();
   const unresolvedKeys = new Set();
   let match;
@@ -93,14 +98,17 @@ function replaceMergeFields(xml, fieldMap) {
 
     if (startNodeIdx === endNodeIdx) {
       const node = nodes[startNodeIdx];
-      const localStart = matchStart - cumulativeStart[startNodeIdx];
-      const localEnd = matchEnd - cumulativeStart[startNodeIdx];
+      const d = deltaOf(startNodeIdx);
+      const localStart = matchStart - cumulativeStart[startNodeIdx] + d;
+      const localEnd = matchEnd - cumulativeStart[startNodeIdx] + d;
       const base = edits.has(startNodeIdx) ? edits.get(startNodeIdx) : node.rawInner;
       edits.set(startNodeIdx, base.slice(0, localStart) + value + base.slice(localEnd));
+      deltas.set(startNodeIdx, d + value.length - (matchEnd - matchStart));
     } else {
       const startNode = nodes[startNodeIdx];
-      const prefixLen = matchStart - cumulativeStart[startNodeIdx];
-      edits.set(startNodeIdx, startNode.rawInner.slice(0, prefixLen) + value);
+      const prefixLen = matchStart - cumulativeStart[startNodeIdx] + deltaOf(startNodeIdx);
+      const startBase = edits.has(startNodeIdx) ? edits.get(startNodeIdx) : startNode.rawInner;
+      edits.set(startNodeIdx, startBase.slice(0, prefixLen) + value);
 
       for (let i = startNodeIdx + 1; i < endNodeIdx; i++) {
         edits.set(i, '');
@@ -109,6 +117,7 @@ function replaceMergeFields(xml, fieldMap) {
       const endNode = nodes[endNodeIdx];
       const suffixStart = matchEnd - cumulativeStart[endNodeIdx];
       edits.set(endNodeIdx, endNode.rawInner.slice(suffixStart));
+      deltas.set(endNodeIdx, -suffixStart);
     }
   }
 

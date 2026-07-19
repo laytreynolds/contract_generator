@@ -1,0 +1,9 @@
+{
+  "name": "contract-generator",
+  "private": true,
+  "version": "1.1.0",
+  "description": "Chrome extension that extracts customer details from a CRM page and fills .docx contract templates. Tests use Node's built-in runner - no dependencies.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

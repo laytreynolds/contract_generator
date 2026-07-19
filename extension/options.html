@@ -67,11 +67,11 @@
 <body>
   <h1>Template Manager</h1>
   <p class="hint">
-    Bundled templates ship with the extension and cannot be changed here. Custom templates are
-    stored in your browser and appear in the popup's template dropdown alongside the bundled ones.
+    Templates are imported here rather than shipped with the extension. Uploaded templates are
+    stored in your browser and appear in the popup's template dropdown.
   </p>
 
-  <h2>Add a custom template</h2>
+  <h2>Add a template</h2>
   <p class="hint">
     Upload a .docx containing <code>{{tokens}}</code>. Tokens are checked against the extension's
     field schema below before saving - green tokens will auto-fill from an extraction, red ones
@@ -89,11 +89,8 @@
   </div>
   <div id="status"></div>
 
-  <h2>Custom templates</h2>
-  <div id="customList"></div>
-
-  <h2>Bundled templates</h2>
-  <div id="bundledList"></div>
+  <h2>Templates</h2>
+  <div id="templateList"></div>
 
   <script src="lib/jszip.min.js"></script>
   <script src="src/fieldSchema.js"></script>

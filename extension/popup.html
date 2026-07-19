@@ -30,6 +30,15 @@
   button:disabled { background: #9ca3af; cursor: not-allowed; }
   button.secondary { background: #e5e7eb; color: #1f2937; margin-bottom: 8px; }
   button.confirm-empty { background: #d97706; }
+  button.link-btn {
+    width: auto;
+    background: none;
+    color: #2563eb;
+    padding: 2px 0;
+    font-size: 12px;
+    text-decoration: underline;
+  }
+  button.link-btn:hover { color: #1d4ed8; }
   #status { min-height: 16px; margin: 6px 0 10px; font-size: 12px; color: #6b7280; }
   #status.error { color: #b91c1c; }
   #restoreBanner {
@@ -101,6 +110,7 @@
   <div id="templatePicker">
     <label for="templateSelect">Template</label>
     <select id="templateSelect"></select>
+    <button id="manageTemplatesBtn" type="button" class="link-btn">Manage templates</button>
   </div>
 
   <button id="extractBtn">Extract from this page</button>

@@ -33,12 +33,12 @@ with the matching extracted field; formatting around the token is preserved.
   the single source of truth. The popup's *Field reference* section lists them too.
 - Token matching is forgiving: `{{Post Code}}`, `{{post_code}}`, and `{{postal_code}}` all
   resolve to the same field. Unknown tokens are left blank in the popup for manual entry.
-- **Bundled templates** live in `extension/assets/templates/` and are listed in
-  `registry.json` there. A test (`tests/templates.test.js`) fails CI if any bundled template
-  contains a token the schema can't resolve.
-- **Custom templates** can be added without touching the repo: open the extension's options
-  page (right-click the icon → Options) and upload a `.docx`. Tokens are validated against the
-  schema on upload; the template then appears in the popup dropdown labelled *(custom)*.
+- No templates ship with the extension or live in this repo — they're imported per-browser-profile.
+  Open the extension's options page (right-click the icon → Options, or the popup's *Manage
+  templates* link) and upload a `.docx`. Tokens are validated against the schema at upload time
+  (green chips auto-fill, red ones need manual entry); the template is stored in
+  `chrome.storage.local` and appears in the popup's dropdown from then on. A fresh install starts
+  with zero templates until you import some.
 
 Adding a genuinely new field means adding it to `fieldSchema.js` **and** producing a value for
 it in `extractKnownFields()` in [`extension/src/parseFields.js`](extension/src/parseFields.js).
@@ -52,7 +52,7 @@ If a template merely spells an existing field differently, add an alias in `fiel
 | `extension/src/parseFields.js` | popup | Pure parsing: raw scrape → canonical fields + warnings |
 | `extension/src/fieldSchema.js` | popup/options | Canonical field names, descriptions, aliases |
 | `extension/src/docxFill.js` | popup/options | `{{token}}` merge into `word/document.xml` (handles tokens split across Word runs) |
-| `extension/src/templateStore.js` | popup/options | Bundled + custom template registry and loading |
+| `extension/src/templateStore.js` | popup/options | Imported template registry, stored in `chrome.storage.local` |
 | `extension/popup.js` | popup | UI, session persistence, generation |
 | `extension/src/options.js` | options page | Custom template upload/validation/management |
 
@@ -65,9 +65,9 @@ modules so they run under Node for testing exactly as they run in the browser.
 npm test        # Node's built-in test runner; no npm install needed
 ```
 
-Tests cover the parsing logic, the docx merge engine (including tokens split across runs and
-repeated tokens), and a regression check that every bundled template's tokens resolve against
-the field schema.
+Tests cover the parsing logic and the docx merge engine (including tokens split across runs and
+repeated tokens). Template token validation happens live in the options page at upload time
+rather than in CI, since templates are no longer stored in the repo.
 
 `template_source.html` at the repo root is a saved snapshot of a CRM order page, kept as
 reference for the selectors in `extractPage.js`.

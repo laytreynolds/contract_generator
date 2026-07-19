@@ -1,4 +1,4 @@
-// Options page: manage custom .docx templates stored in chrome.storage.local (see
+// Options page: manage .docx templates imported into chrome.storage.local (see
 // templateStore.js). Uploads are validated by listing their {{tokens}} and checking each one
 // against the canonical field schema, so authors see before saving which fields will auto-fill.
 
@@ -9,8 +9,7 @@ const previewTokens = document.getElementById('previewTokens');
 const labelInput = document.getElementById('labelInput');
 const saveBtn = document.getElementById('saveBtn');
 const statusEl = document.getElementById('status');
-const customList = document.getElementById('customList');
-const bundledList = document.getElementById('bundledList');
+const templateList = document.getElementById('templateList');
 
 // Running extractKnownFields on an empty page yields a dictionary containing every canonical
 // key (all blank) -- exactly the key set canonicalKeyForToken() matches tokens against, without
@@ -89,7 +88,7 @@ async function handleSave() {
   saveBtn.disabled = true;
   try {
     const id = `custom-${slugify(label)}`;
-    await TemplateStore.saveCustomTemplate({ id, label, buffer: pendingUpload.buffer });
+    await TemplateStore.saveTemplate({ id, label, buffer: pendingUpload.buffer });
     setStatus(`Saved "${label}". It now appears in the popup's template dropdown.`, 'ok');
     pendingUpload = null;
     fileInput.value = '';
@@ -103,7 +102,7 @@ async function handleSave() {
   }
 }
 
-async function templateCard(meta, { deletable }) {
+async function templateCard(meta) {
   const card = document.createElement('div');
   card.className = 'card';
 
@@ -115,24 +114,20 @@ async function templateCard(meta, { deletable }) {
   name.textContent = meta.label;
   const metaLine = document.createElement('div');
   metaLine.className = 'meta';
-  metaLine.textContent = deletable
-    ? `Added ${new Date(meta.addedAt).toLocaleDateString()} - ${(meta.size / 1024).toFixed(0)} KB`
-    : `Bundled - ${meta.file}`;
+  metaLine.textContent = `Added ${new Date(meta.addedAt).toLocaleDateString()} - ${(meta.size / 1024).toFixed(0)} KB`;
   left.appendChild(name);
   left.appendChild(metaLine);
   head.appendChild(left);
 
-  if (deletable) {
-    const del = document.createElement('button');
-    del.className = 'danger';
-    del.textContent = 'Delete';
-    del.addEventListener('click', async () => {
-      await TemplateStore.deleteCustomTemplate(meta.id);
-      setStatus(`Deleted "${meta.label}".`, 'ok');
-      await renderLists();
-    });
-    head.appendChild(del);
-  }
+  const del = document.createElement('button');
+  del.className = 'danger';
+  del.textContent = 'Delete';
+  del.addEventListener('click', async () => {
+    await TemplateStore.deleteTemplate(meta.id);
+    setStatus(`Deleted "${meta.label}".`, 'ok');
+    await renderLists();
+  });
+  head.appendChild(del);
   card.appendChild(head);
 
   const tokensBox = document.createElement('div');
@@ -149,19 +144,14 @@ async function templateCard(meta, { deletable }) {
 }
 
 async function renderLists() {
-  const merged = await TemplateStore.loadMergedRegistry();
-  const bundled = merged.filter((t) => t.source === 'bundled');
-  const custom = merged.filter((t) => t.source === 'custom');
+  const templates = await TemplateStore.loadTemplates();
 
-  customList.innerHTML = '';
-  if (!custom.length) {
-    customList.innerHTML = '<p class="hint">No custom templates yet.</p>';
+  templateList.innerHTML = '';
+  if (!templates.length) {
+    templateList.innerHTML = '<p class="hint">No templates yet - upload one above.</p>';
   } else {
-    for (const meta of custom) customList.appendChild(await templateCard(meta, { deletable: true }));
+    for (const meta of templates) templateList.appendChild(await templateCard(meta));
   }
-
-  bundledList.innerHTML = '';
-  for (const meta of bundled) bundledList.appendChild(await templateCard(meta, { deletable: false }));
 }
 
 fileInput.addEventListener('change', handleFileChosen);

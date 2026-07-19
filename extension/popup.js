@@ -13,6 +13,7 @@ const fieldReferenceBox = document.getElementById('fieldReference');
 const restoreBanner = document.getElementById('restoreBanner');
 const restoreBannerText = document.getElementById('restoreBannerText');
 const clearRestoredBtn = document.getElementById('clearRestoredBtn');
+const manageTemplatesBtn = document.getElementById('manageTemplatesBtn');
 
 const SESSION_KEY = 'extractionState';
 
@@ -36,7 +37,7 @@ const EXTRA_INFO_LABELS = {
 // as the user clicks back onto the CRM page) is mirrored to chrome.storage.session via
 // saveSessionState() and restored in init().
 const state = {
-  templates: [], // merged bundled + custom registry entries
+  templates: [], // imported template registry entries
   knownFields: null, // broad field dictionary from the last extraction, or null before first extract
   extraInfo: null,
   warnings: [], // [{field, message}]
@@ -296,10 +297,27 @@ function currentTemplateMeta() {
   return state.templates.find((t) => t.id === templateSelect.value) || null;
 }
 
-async function loadRegistry() {
-  const templates = await TemplateStore.loadMergedRegistry();
+// An empty list is the normal first-run state (nothing imported yet), not an error -- disable the
+// picker and generate buttons and point the user at the options page instead of failing init().
+async function loadTemplates() {
+  const templates = await TemplateStore.loadTemplates();
   state.templates = templates;
   templateSelect.innerHTML = '';
+
+  if (!templates.length) {
+    const opt = document.createElement('option');
+    opt.textContent = 'No templates yet - add one in Options';
+    templateSelect.appendChild(opt);
+    templateSelect.disabled = true;
+    generateBtn.disabled = true;
+    generateAllBtn.disabled = true;
+    setStatus('No templates yet. Click "Manage templates" below to import a .docx.');
+    return;
+  }
+
+  templateSelect.disabled = false;
+  generateBtn.disabled = false;
+  generateAllBtn.disabled = false;
   templates.forEach((t) => {
     const opt = document.createElement('option');
     opt.value = t.id;
@@ -400,7 +418,7 @@ function buildFilename(meta, fieldMap) {
   const dateStr = new Date().toISOString().slice(0, 10);
   const customerName =
     fieldMap['business_name'] || (state.knownFields && state.knownFields['business_name']) || '';
-  return `${meta.label.replace(/ \(custom\)$/, '')} - ${sanitizeFilenamePart(customerName)} - ${dateStr}.docx`;
+  return `${meta.label} - ${sanitizeFilenamePart(customerName)} - ${dateStr}.docx`;
 }
 
 // Builds a template's fieldMap from the extraction + manual overrides. For the currently
@@ -487,7 +505,7 @@ async function init() {
   renderFieldReference();
   extractBtn.disabled = true;
   try {
-    await loadRegistry();
+    await loadTemplates();
   } catch (err) {
     console.error(err);
     setStatus(`Could not load templates: ${err.message}`, true);
@@ -508,5 +526,6 @@ extractBtn.addEventListener('click', handleExtract);
 generateBtn.addEventListener('click', handleGenerate);
 generateAllBtn.addEventListener('click', handleGenerateAll);
 clearRestoredBtn.addEventListener('click', clearSessionState);
+manageTemplatesBtn.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
 init();

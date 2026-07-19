@@ -1,5 +1,9 @@
 // Pure parsing/mapping logic -- no DOM access, runs in the popup on the JSON returned by
 // extractPage.js. Kept dependency-free so it's easy to reason about / test in isolation.
+//
+// Warnings are structured as { field, message }: `field` is the canonical knownFields key the
+// warning is about (so the popup can highlight the matching input), or null for page-level
+// warnings that don't map to a single input.
 
 const UK_POSTCODE_RE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
 const UK_POSTCODE_SEARCH_RE = /([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})/i;
@@ -165,13 +169,24 @@ function resolveBusinessName(labelValues, specialReqName, warnings) {
   if (!name && specialReqName) {
     name = specialReqName;
   } else if (name && specialReqName && name.toLowerCase() !== specialReqName.toLowerCase()) {
-    warnings.push(
-      `Customer name from the page ("${name}") and from Special Requirements ("${specialReqName}") don't match - please verify.`
-    );
+    warnings.push({
+      field: 'business_name',
+      message: `Customer name from the page ("${name}") and from Special Requirements ("${specialReqName}") don't match - please verify.`,
+    });
   }
 
-  if (!name) warnings.push('Could not determine a customer name - please fill it in manually.');
+  if (!name) warnings.push({ field: 'business_name', message: 'Could not determine a customer name - please fill it in manually.' });
   return name;
+}
+
+// Separate from resolveBusinessName's combined "First Last" -- some templates (e.g. a welcome
+// letter salutation) want just the first name. Prefers the literal First Name label when present;
+// otherwise falls back to the first word of whatever name was already resolved above (which
+// covers the Business Name / Full Name / Special Requirements fallback paths too).
+function resolveFirstName(labelValues, businessName) {
+  const firstName = labelValues['First Name'] || '';
+  if (!isBlank(firstName)) return firstName.trim();
+  return businessName ? businessName.trim().split(/\s+/)[0] : '';
 }
 
 function resolvePlanAndPrice(labelValues, planSegmentRaw, warnings) {
@@ -187,13 +202,13 @@ function resolvePlanAndPrice(labelValues, planSegmentRaw, warnings) {
 
   const split = splitTrailingAmount(source);
   if (!split) {
-    if (source) warnings.push(`Could not find a price in "${source}" - please fill Plan / price manually.`);
-    else warnings.push('No plan/price found on the page - please fill Plan / price manually.');
+    if (source) warnings.push({ field: 'price', message: `Could not find a price in "${source}" - please fill Plan / price manually.` });
+    else warnings.push({ field: 'consumer_plan', message: 'No plan/price found on the page - please fill Plan / price manually.' });
     return { plan: source.trim(), price: '' };
   }
 
   if (usedFallback) {
-    warnings.push('Plan and price were pulled from Special Requirements text (the Tariff field was blank) - please double check.');
+    warnings.push({ field: 'consumer_plan', message: 'Plan and price were pulled from Special Requirements text (the Tariff field was blank) - please double check.' });
   }
 
   return { plan: split.name, price: split.price };
@@ -204,7 +219,7 @@ function resolveAddress(billingAddress, deliveryAddress, addressSummary, warning
   if (!address.first && !address.postCode && deliveryAddress && deliveryAddress.length) {
     address = buildAddressFields(deliveryAddress);
     if (address.first || address.postCode) {
-      warnings.push('Billing Address was empty - address was taken from Delivery Address instead.');
+      warnings.push({ field: 'address_first_line', message: 'Billing Address was empty - address was taken from Delivery Address instead.' });
     }
   }
   if (!address.first && !address.postCode && addressSummary) {
@@ -212,10 +227,10 @@ function resolveAddress(billingAddress, deliveryAddress, addressSummary, warning
     const postCode = postMatch ? postMatch[1].toUpperCase().replace(/\s+/g, ' ') : '';
     const rest = postMatch ? addressSummary.replace(postMatch[1], '').replace(/,\s*$/, '').trim() : addressSummary;
     address = { first: rest, second: '', third: '', postCode };
-    warnings.push('Address was parsed from Special Requirements free text - please check it carefully.');
+    warnings.push({ field: 'address_first_line', message: 'Address was parsed from Special Requirements free text - please check it carefully.' });
   }
   if (!address.first && !address.postCode) {
-    warnings.push('No address found on the page - please fill the address fields manually.');
+    warnings.push({ field: 'address_first_line', message: 'No address found on the page - please fill the address fields manually.' });
   }
   return address;
 }
@@ -285,6 +300,7 @@ function extractKnownFields(rawExtraction) {
   const { extraInfo, nameFromSpecialReq } = parseSpecialRequirements(rawExtraction.specialRequirements);
 
   const businessName = resolveBusinessName(labelValues, nameFromSpecialReq, warnings);
+  const firstName = resolveFirstName(labelValues, businessName);
   const { plan, price } = resolvePlanAndPrice(labelValues, extraInfo.planSegment, warnings);
   const address = resolveAddress(
     rawExtraction.billingAddress,
@@ -295,6 +311,7 @@ function extractKnownFields(rawExtraction) {
 
   const knownFields = {
     business_name: businessName,
+    first_name: firstName,
     address_first_line: address.first,
     address_second_line: address.second,
     address_third_line: address.third,
@@ -319,7 +336,7 @@ function extractKnownFields(rawExtraction) {
     // free-text Special Requirements, so it's preferred when present.
     date_of_birth: (!isBlank(labelValues['Date Of Birth']) && isoDateToUk(labelValues['Date Of Birth'])) || extraInfo.dob || '',
     agent_name: (!isBlank(labelValues['Agent Name']) && labelValues['Agent Name']) || '',
-    eligibility_date: (!isBlank(labelValues['Eligibility Date']) && labelValues['Eligibility Date']) || '',
+    eligibility_date: (!isBlank(labelValues['Eligibility Date']) && isoDateToUk(labelValues['Eligibility Date'])) || '',
     sale_type: (!isBlankField(labelValues['Sale Type']) && labelValues['Sale Type']) || '',
     monthly_line_rental: extraInfo.monthlyLineRental || '',
     contract_term: extraInfo.contractTerm || '',
@@ -352,31 +369,39 @@ FieldSchemaSource.forEach(({ key, aliases }) => {
   });
 });
 
-// Looks up a template's {{token}} name against the knownFields dictionary: exact match first,
-// then normalized match, then the alias table. Returns '' (not undefined) when nothing matches
-// so callers can leave the input blank for manual entry rather than throwing.
-function resolveFieldForToken(token, knownFields) {
-  if (Object.prototype.hasOwnProperty.call(knownFields, token)) {
-    return knownFields[token] || '';
-  }
+// Maps a template's {{token}} name to the canonical knownFields key it reads from: exact match
+// first, then normalized match, then the alias table. Returns null when nothing matches. Used
+// both for value lookup and for anchoring field-level warnings to whichever input shows that field.
+function canonicalKeyForToken(token, knownFields) {
+  if (Object.prototype.hasOwnProperty.call(knownFields, token)) return token;
   const norm = normalizeKey(token);
   for (const key of Object.keys(knownFields)) {
-    if (normalizeKey(key) === norm) return knownFields[key] || '';
+    if (normalizeKey(key) === norm) return key;
   }
   const aliasTarget = FIELD_ALIASES[norm];
-  if (aliasTarget && Object.prototype.hasOwnProperty.call(knownFields, aliasTarget)) {
-    return knownFields[aliasTarget] || '';
-  }
-  return '';
+  if (aliasTarget && Object.prototype.hasOwnProperty.call(knownFields, aliasTarget)) return aliasTarget;
+  return null;
+}
+
+// Returns '' (not undefined) when nothing matches so callers can leave the input blank for
+// manual entry rather than throwing.
+function resolveFieldForToken(token, knownFields) {
+  const key = canonicalKeyForToken(token, knownFields);
+  return key ? knownFields[key] || '' : '';
 }
 
 const ParseFields = {
   extractKnownFields,
   resolveFieldForToken,
+  canonicalKeyForToken,
   buildAddressFields,
   splitTrailingAmount,
   stripBusinessNameComposite,
   parseSpecialRequirements,
+  todayUk,
+  nowUk,
+  formattedDateLong,
+  normalizeKey,
 };
 
 if (typeof window !== 'undefined') {

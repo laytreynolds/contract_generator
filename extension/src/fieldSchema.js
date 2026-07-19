@@ -9,6 +9,7 @@
 // differently.
 const FIELD_SCHEMA = [
   { key: 'business_name', description: 'Customer / company name.', aliases: ['customer_name', 'full_name', 'name', 'customer'] },
+  { key: 'first_name', description: 'Customer first name only, for salutations (e.g. "Dear {{first_name}},").', aliases: ['firstname'] },
   { key: 'address_first_line', description: 'Billing address line 1.', aliases: ['address_line_1'] },
   { key: 'address_second_line', description: 'Billing address line 2.', aliases: ['address_line_2'] },
   { key: 'address_third_line', description: 'Billing address line 3 (remaining town/county lines, joined).', aliases: ['address_line_3'] },
@@ -28,7 +29,7 @@ const FIELD_SCHEMA = [
   { key: 'account_number', description: 'Bank account number.', aliases: [] },
   { key: 'date_of_birth', description: 'Customer date of birth, UK format dd/mm/yyyy.', aliases: ['dob'] },
   { key: 'agent_name', description: 'Sales agent name.', aliases: ['agent'] },
-  { key: 'eligibility_date', description: 'Eligibility date field from the page.', aliases: [] },
+  { key: 'eligibility_date', description: 'Eligibility date field from the page.', aliases: ['elligibity_date', 'eligibility date'] },
   { key: 'sale_type', description: 'Sale type, e.g. "EE Consumer".', aliases: [] },
   { key: 'monthly_line_rental', description: 'Monthly line rental charge.', aliases: ['monthly_rental', 'line_rental'] },
   { key: 'contract_term', description: 'Contract length, e.g. "24 Months".', aliases: ['minimum_term', 'contract_length'] },

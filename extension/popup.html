@@ -29,10 +29,29 @@
   }
   button:disabled { background: #9ca3af; cursor: not-allowed; }
   button.secondary { background: #e5e7eb; color: #1f2937; margin-bottom: 8px; }
+  button.confirm-empty { background: #d97706; }
   #status { min-height: 16px; margin: 6px 0 10px; font-size: 12px; color: #6b7280; }
   #status.error { color: #b91c1c; }
+  #restoreBanner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #1e40af;
+  }
+  #restoreBanner.show { display: flex; }
+  #restoreBanner button { width: auto; padding: 3px 8px; font-size: 12px; background: #dbeafe; color: #1e40af; flex: none; }
   .field { margin-bottom: 8px; }
   .field label { display: block; font-weight: 600; margin-bottom: 2px; }
+  .field input.warned { border-color: #f59e0b; background: #fffbeb; }
+  .field input.empty-flagged { border-color: #dc2626; background: #fef2f2; }
+  .field .field-warning { font-size: 11px; color: #b45309; margin-top: 2px; }
   .field input, select {
     width: 100%;
     box-sizing: border-box;
@@ -58,8 +77,10 @@
   details { margin: 10px 0; }
   summary { cursor: pointer; font-weight: 600; }
   #extraInfo { font-size: 12px; margin-top: 6px; }
-  #extraInfo .row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; border-bottom: 1px dashed #e5e7eb; }
+  #extraInfo .row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; border-bottom: 1px dashed #e5e7eb; cursor: pointer; }
   #extraInfo .row span:first-child { color: #6b7280; }
+  #extraInfo .row:hover { background: #f3f4f6; }
+  #extraInfo .row.copied span:last-child { color: #059669; }
   #fieldReference .row { padding: 4px 0; border-bottom: 1px dashed #e5e7eb; }
   #fieldReference .row code { font-weight: 600; }
   #fieldReference .row .desc { color: #6b7280; display: block; }
@@ -71,6 +92,11 @@
 </head>
 <body>
   <h1>Document Generator</h1>
+
+  <div id="restoreBanner">
+    <span id="restoreBannerText"></span>
+    <button id="clearRestoredBtn" type="button">Clear</button>
+  </div>
 
   <div id="templatePicker">
     <label for="templateSelect">Template</label>
@@ -93,6 +119,7 @@
 
     <hr />
     <button id="generateBtn">Generate Document (.docx)</button>
+    <button id="generateAllBtn" class="secondary" style="margin-top:8px">Generate All Documents</button>
   </div>
 
   <details id="fieldReferenceDetails">
@@ -105,6 +132,7 @@
   <script src="src/fieldSchema.js"></script>
   <script src="src/parseFields.js"></script>
   <script src="src/docxFill.js"></script>
+  <script src="src/templateStore.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
